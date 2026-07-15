@@ -40,7 +40,7 @@ function fromPersisted(saved: PersistedGameV1): GameState {
     hintCell: null,
     hintStage: 0,
     errorCell: null,
-    message: saved.phase === 'completed' ? '¡Lo hiciste fantástico!' : 'Elige una casilla brillante para empezar.',
+    message: saved.phase === 'completed' ? '¡Lo hiciste fantástico! ¡Qué bien has jugado!' : '¡Vamos a jugar! Elige la casilla que brilla.',
     soundEnabled: saved.soundEnabled,
     guidedStepComplete: saved.guidedStepComplete,
   }
@@ -56,7 +56,7 @@ function createNewGame(soundEnabled = true): GameState {
     hintCell: puzzle.guidedCell,
     hintStage: 1,
     errorCell: null,
-    message: 'Toca la casilla que brilla. Después, elige una criatura.',
+    message: '¡Vamos a jugar! Toca la casilla que brilla y después elige un animal.',
     soundEnabled,
     guidedStepComplete: false,
   }
@@ -90,7 +90,7 @@ function App() {
     const next = state?.phase === 'guided' || state?.phase === 'playing' ? { ...state, soundEnabled: soundPreference } : createNewGame(soundPreference)
     setState(next)
     playTone('select')
-    speak(next.phase === 'guided' ? 'Toca la casilla que brilla. Después, elige una criatura.' : '¡Continuamos!', next.soundEnabled)
+    speak(next.phase === 'guided' ? next.message : '¡Continuamos! Sigue jugando.', next.soundEnabled)
   }
 
   const goHome = () => setState(null)
@@ -111,26 +111,26 @@ function App() {
 
   const selectCell = (cell: Cell) => {
     if (state.phase === 'guided' && cell !== state.puzzle.guidedCell) {
-      setState({ ...state, message: 'Prueba con la casilla que brilla.', selectedCell: state.puzzle.guidedCell, errorCell: null })
-      speak('Prueba con la casilla que brilla', state.soundEnabled)
+      setState({ ...state, message: '¡Casi! Busca la casilla que brilla.', selectedCell: state.puzzle.guidedCell, errorCell: null })
+      speak('¡Casi! Busca la casilla que brilla.', state.soundEnabled)
       return
     }
     if (state.board[cell] !== null) return
-    setState({ ...state, selectedCell: cell, errorCell: null, hintCell: state.hintCell === cell ? state.hintCell : null, hintStage: state.hintCell === cell ? state.hintStage : 0, message: 'Ahora toca la criatura que quieres colocar.' })
+    setState({ ...state, selectedCell: cell, errorCell: null, hintCell: state.hintCell === cell ? state.hintCell : null, hintStage: state.hintCell === cell ? state.hintStage : 0, message: '¡Muy bien! Ahora elige el animal que quieres colocar.' })
     playTone('select')
   }
 
   const selectCreature = (creature: CreatureId) => {
     if (state.selectedCell === null) {
-      setState({ ...state, message: 'Primero toca una casilla vacía.' })
-      speak('Primero toca una casilla vacía', state.soundEnabled)
+      setState({ ...state, message: 'Primero elige una casilla vacía. ¡Tú puedes!' })
+      speak('Primero elige una casilla vacía. ¡Tú puedes!', state.soundEnabled)
       return
     }
     const cell = state.selectedCell
     if (state.puzzle.solution[cell] !== creature) {
-      setState({ ...state, errorCell: cell, hintCell: cell, hintStage: 1, message: 'Casi. Mira qué criaturas todavía pueden entrar aquí.' })
+      setState({ ...state, errorCell: cell, hintCell: cell, hintStage: 1, message: '¡Casi! Estás muy cerca. Mira qué animales pueden entrar aquí.' })
       playTone('gentle-error')
-      speak('Casi. Mira qué criaturas todavía pueden entrar aquí', state.soundEnabled)
+      speak('¡Casi! Estás muy cerca. Mira qué animales pueden entrar aquí.', state.soundEnabled)
       return
     }
 
@@ -146,7 +146,7 @@ function App() {
       hintCell: null,
       hintStage: 0,
       errorCell: null,
-      message: complete ? '¡Lo hiciste fantástico!' : '¡Muy bien! Busca la siguiente casilla.',
+      message: complete ? '¡Lo hiciste fantástico! ¡Qué bien has jugado!' : '¡Muy bien! Sigue jugando, busca la siguiente casilla.',
     }
     setState(next)
     playTone(complete ? 'success' : 'select')
@@ -157,7 +157,7 @@ function App() {
     const cell = state.hintCell ?? state.selectedCell ?? getBestHintCell(state.board)
     if (cell === null) return
     const stage = state.hintCell === cell && state.hintStage === 1 ? 2 : 1
-    const message = stage === 2 ? 'Mira la criatura que brilla. Esa puede entrar aquí.' : 'Mira la fila, la columna y el bloque. Algunas criaturas ya están ahí.'
+    const message = stage === 2 ? '¡Mira el animal que brilla! Esa es una buena pista.' : 'Mira con calma la fila, la columna y el bloque. ¡Tú puedes!'
     setState({ ...state, hintCell: cell, selectedCell: cell, hintStage: stage, errorCell: null, message })
     speak(message, state.soundEnabled)
   }
@@ -174,8 +174,8 @@ function App() {
             <div className="coach-bubble"><div className="coach-avatar"><CreatureArt creature="turtle" /></div><p role="status" aria-live="polite">{state.message}</p></div>
             <Board board={state.board} selectedCell={state.selectedCell} hintCell={state.hintCell} guidedCell={state.puzzle.guidedCell} errorCell={state.errorCell} onCellSelect={selectCell} />
           </section>
-          <aside className="controls-column" aria-label="Criaturas y pistas">
-            <div className="tray" role="group" aria-label="Elige una criatura">
+          <aside className="controls-column" aria-label="Animales y pistas">
+            <div className="tray" role="group" aria-label="Elige un animal">
               {CREATURES.map((creature) => {
                 const disabled = state.selectedCell !== null && !candidates.includes(creature)
                 const isAnswerHint = state.hintStage === 2 && state.selectedCell !== null && state.puzzle.solution[state.selectedCell] === creature
@@ -183,7 +183,7 @@ function App() {
               })}
             </div>
             <button type="button" className="hint-button" onClick={showHint}><HintIcon /> <span>Pista</span></button>
-            <p className="helper-copy">Toca una casilla vacía y después una criatura.</p>
+            <p className="helper-copy">Toca una casilla vacía y después un animal.</p>
           </aside>
         </div>
       </div>
@@ -196,7 +196,7 @@ function Header({ soundEnabled, onSound }: { soundEnabled: boolean; onSound: () 
 }
 
 function WelcomeScreen({ hasSaved, soundEnabled, onStart, onSound }: { hasSaved: boolean; soundEnabled: boolean; onStart: () => void; onSound: (enabled: boolean) => void }) {
-  return <main className="app-shell welcome-shell"><section className="welcome-card"><Header soundEnabled={soundEnabled} onSound={() => onSound(!soundEnabled)} /><div className="welcome-art" aria-hidden="true"><div className="welcome-creature welcome-turtle"><CreatureArt creature="turtle" /></div><div className="welcome-creature welcome-fish"><CreatureArt creature="fish" /></div><div className="welcome-creature welcome-octopus"><CreatureArt creature="octopus" /></div><div className="welcome-creature welcome-starfish"><CreatureArt creature="starfish" /></div></div><h1>Sudoku<br /><span>Marino</span></h1><p className="welcome-copy">Completa el océano con tus criaturas favoritas.</p><button type="button" className="primary-button" onClick={onStart}>{hasSaved ? 'Continuar' : 'Jugar'}</button></section></main>
+  return <main className="app-shell welcome-shell"><section className="welcome-card"><Header soundEnabled={soundEnabled} onSound={() => onSound(!soundEnabled)} /><div className="welcome-art" aria-hidden="true"><div className="welcome-creature welcome-turtle"><CreatureArt creature="turtle" /></div><div className="welcome-creature welcome-fish"><CreatureArt creature="fish" /></div><div className="welcome-creature welcome-octopus"><CreatureArt creature="octopus" /></div><div className="welcome-creature welcome-starfish"><CreatureArt creature="starfish" /></div></div><h1>Sudoku<br /><span>Marino</span></h1><p className="welcome-copy">Completa el océano con tus animales favoritos.</p><button type="button" className="primary-button" onClick={onStart}>{hasSaved ? 'Continuar' : 'Jugar'}</button></section></main>
 }
 
 function VictoryScreen({ soundEnabled, onSound, onReplay, onHome }: { soundEnabled: boolean; onSound: () => void; onReplay: () => void; onHome: () => void }) {
