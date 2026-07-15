@@ -26,7 +26,7 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-package-lock
       - name: Verify
         run: npm test -- --run && npm run lint && npm run build
       - name: Setup Pages
