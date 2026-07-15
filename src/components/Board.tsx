@@ -34,7 +34,7 @@ export function Board({ board, selectedCell, hintCell, guidedCell, errorCell, on
             type="button"
             className={classNames}
             role="gridcell"
-            aria-label={creature ? `Casilla ${cell + 1}: ${creature}` : `Casilla ${cell + 1} vacÃ­a`}
+            aria-label={creature ? `Casilla ${cell + 1}: ${creature}` : `Casilla ${cell + 1} vacía`}
             aria-selected={selectedCell === cell}
             onClick={() => onCellSelect(cell)}
           >
