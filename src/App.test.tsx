@@ -36,4 +36,14 @@ describe('Sudoku Marino experience', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/siguiente casilla/i)
     expect(JSON.parse(localStorage.getItem('sudoku-marino:game:v1') ?? '{}')).toMatchObject({ guidedStepComplete: true, phase: 'playing' })
   })
+
+  it('lets the child try every animal in discovery level', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /Nivel 2/i }))
+
+    expect(screen.getByRole('button', { name: 'Elegir pulpo rosa' })).toHaveAttribute('aria-disabled', 'false')
+    fireEvent.click(screen.getByRole('button', { name: 'Elegir pulpo rosa' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Estás muy cerca/i)
+  })
 })
