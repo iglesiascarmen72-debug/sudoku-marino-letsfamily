@@ -8,7 +8,7 @@ import { loadGame, saveGame } from './game/persistence'
 import { PUZZLES } from './game/puzzles'
 import { CREATURES } from './game/types'
 import { CREATURE_LABELS } from './game/creatureLabels'
-import type { Board as GameBoard, Cell, CreatureId, GamePhase, PersistedGameV1, Puzzle } from './game/types'
+import type { Board as GameBoard, Cell, CreatureId, GameLevel, GamePhase, PersistedGameV1, Puzzle } from './game/types'
 import './styles.css'
 
 type GameState = {
@@ -22,6 +22,7 @@ type GameState = {
   message: string
   soundEnabled: boolean
   guidedStepComplete: boolean
+  level: GameLevel
 }
 
 function puzzleFor(id: string) {
@@ -43,22 +44,24 @@ function fromPersisted(saved: PersistedGameV1): GameState {
     message: saved.phase === 'completed' ? '¡Lo hiciste fantástico! ¡Qué bien has jugado!' : '¡Vamos a jugar! Elige la casilla que brilla.',
     soundEnabled: saved.soundEnabled,
     guidedStepComplete: saved.guidedStepComplete,
+    level: saved.level ?? 'guided',
   }
 }
 
-function createNewGame(soundEnabled = true): GameState {
+function createNewGame(soundEnabled = true, level: GameLevel = 'guided'): GameState {
   const puzzle = PUZZLES[Math.floor(Math.random() * PUZZLES.length)]
   return {
     puzzle,
     board: [...puzzle.initial],
     phase: 'guided',
     selectedCell: puzzle.guidedCell,
-    hintCell: puzzle.guidedCell,
-    hintStage: 1,
+    hintCell: level === 'guided' ? puzzle.guidedCell : null,
+    hintStage: level === 'guided' ? 1 : 0,
     errorCell: null,
-    message: '¡Vamos a jugar! Toca la casilla que brilla y después elige un animal.',
+    message: level === 'guided' ? '¡Vamos a jugar! Toca la casilla que brilla y después elige un animal.' : '¡Vamos a jugar! Elige una casilla vacía y prueba con un animal.',
     soundEnabled,
     guidedStepComplete: false,
+    level,
   }
 }
 
@@ -74,6 +77,7 @@ function toPersisted(state: GameState): PersistedGameV1 {
     phase: state.phase,
     guidedStepComplete: state.guidedStepComplete,
     soundEnabled: state.soundEnabled,
+    level: state.level,
   }
 }
 
@@ -86,8 +90,10 @@ function App() {
     if (state && state.phase !== 'welcome') saveGame(toPersisted(state))
   }, [state])
 
-  const start = () => {
-    const next = state?.phase === 'guided' || state?.phase === 'playing' ? { ...state, soundEnabled: soundPreference } : createNewGame(soundPreference)
+  const start = (requestedLevel?: GameLevel) => {
+    const next = state?.phase === 'guided' || state?.phase === 'playing'
+      ? { ...state, soundEnabled: soundPreference, level: requestedLevel ?? state.level }
+      : createNewGame(soundPreference, requestedLevel ?? 'guided')
     setState(next)
     playTone('select')
     speak(next.phase === 'guided' ? next.message : '¡Continuamos! Sigue jugando.', next.soundEnabled)
@@ -106,17 +112,17 @@ function App() {
   }
 
   if (state.phase === 'completed') {
-    return <VictoryScreen soundEnabled={state.soundEnabled} onSound={() => setSound(!state.soundEnabled)} onReplay={() => { const next = createNewGame(state.soundEnabled); setState(next); speak(next.message, next.soundEnabled) }} onHome={goHome} />
+    return <VictoryScreen soundEnabled={state.soundEnabled} onSound={() => setSound(!state.soundEnabled)} onReplay={() => { const next = createNewGame(state.soundEnabled, state.level); setState(next); speak(next.message, next.soundEnabled) }} onHome={goHome} />
   }
 
   const selectCell = (cell: Cell) => {
-    if (state.phase === 'guided' && cell !== state.puzzle.guidedCell) {
+    if (state.level === 'guided' && state.phase === 'guided' && cell !== state.puzzle.guidedCell) {
       setState({ ...state, message: '¡Casi! Busca la casilla que brilla.', selectedCell: state.puzzle.guidedCell, errorCell: null })
       speak('¡Casi! Busca la casilla que brilla.', state.soundEnabled)
       return
     }
     if (state.board[cell] !== null) return
-    setState({ ...state, selectedCell: cell, errorCell: null, hintCell: state.hintCell === cell ? state.hintCell : null, hintStage: state.hintCell === cell ? state.hintStage : 0, message: '¡Muy bien! Ahora elige el animal que quieres colocar.' })
+    setState({ ...state, selectedCell: cell, errorCell: null, hintCell: state.hintCell === cell ? state.hintCell : null, hintStage: state.hintCell === cell ? state.hintStage : 0, message: state.level === 'guided' ? '¡Muy bien! Ahora elige el animal que quieres colocar.' : '¡Muy bien! Ahora prueba con el animal que creas que encaja.' })
     playTone('select')
   }
 
@@ -128,9 +134,9 @@ function App() {
     }
     const cell = state.selectedCell
     if (state.puzzle.solution[cell] !== creature) {
-      setState({ ...state, errorCell: cell, hintCell: cell, hintStage: 1, message: '¡Casi! Estás muy cerca. Mira qué animales pueden entrar aquí.' })
+      setState({ ...state, errorCell: cell, hintCell: cell, hintStage: state.level === 'guided' ? 1 : 0, message: '¡Casi! Estás muy cerca. Sigue intentándolo.' })
       playTone('gentle-error')
-      speak('¡Casi! Estás muy cerca. Mira qué animales pueden entrar aquí.', state.soundEnabled)
+      speak('¡Casi! Estás muy cerca. Sigue intentándolo.', state.soundEnabled)
       return
     }
 
@@ -177,7 +183,7 @@ function App() {
           <aside className="controls-column" aria-label="Animales y pistas">
             <div className="tray" role="group" aria-label="Elige un animal">
               {CREATURES.map((creature) => {
-                const disabled = state.selectedCell !== null && !candidates.includes(creature)
+                const disabled = state.level === 'guided' && state.selectedCell !== null && !candidates.includes(creature)
                 const isAnswerHint = state.hintStage === 2 && state.selectedCell !== null && state.puzzle.solution[state.selectedCell] === creature
                 return <button key={creature} type="button" className={`creature-choice ${disabled ? 'is-disabled' : ''} ${isAnswerHint ? 'is-answer-hint' : ''}`} aria-label={`Elegir ${CREATURE_LABELS[creature]}`} aria-disabled={disabled} onClick={() => selectCreature(creature)}><CreatureArt creature={creature} /></button>
               })}
@@ -195,8 +201,8 @@ function Header({ soundEnabled, onSound }: { soundEnabled: boolean; onSound: () 
   return <header className="game-header"><div className="title-lockup"><strong>Sudoku<br /><span>Marino</span></strong><img src={`${import.meta.env.BASE_URL}assets/logo-letsfamily.svg`} alt="LetsFamily.es" /></div><button type="button" className="sound-button" aria-label={soundEnabled ? 'Silenciar sonido' : 'Activar sonido'} onClick={onSound}><SoundIcon muted={!soundEnabled} /></button></header>
 }
 
-function WelcomeScreen({ hasSaved, soundEnabled, onStart, onSound }: { hasSaved: boolean; soundEnabled: boolean; onStart: () => void; onSound: (enabled: boolean) => void }) {
-  return <main className="app-shell welcome-shell"><section className="welcome-card"><Header soundEnabled={soundEnabled} onSound={() => onSound(!soundEnabled)} /><div className="welcome-art" aria-hidden="true"><div className="welcome-creature welcome-turtle"><CreatureArt creature="turtle" /></div><div className="welcome-creature welcome-fish"><CreatureArt creature="fish" /></div><div className="welcome-creature welcome-octopus"><CreatureArt creature="octopus" /></div><div className="welcome-creature welcome-starfish"><CreatureArt creature="starfish" /></div></div><h1>Sudoku<br /><span>Marino</span></h1><p className="welcome-copy">Completa el océano con tus animales favoritos.</p><button type="button" className="primary-button" onClick={onStart}>{hasSaved ? 'Continuar' : 'Jugar'}</button></section></main>
+function WelcomeScreen({ hasSaved, soundEnabled, onStart, onSound }: { hasSaved: boolean; soundEnabled: boolean; onStart: (level: GameLevel) => void; onSound: (enabled: boolean) => void }) {
+  return <main className="app-shell welcome-shell"><section className="welcome-card"><Header soundEnabled={soundEnabled} onSound={() => onSound(!soundEnabled)} /><div className="welcome-art" aria-hidden="true"><div className="welcome-creature welcome-turtle"><CreatureArt creature="turtle" /></div><div className="welcome-creature welcome-fish"><CreatureArt creature="fish" /></div><div className="welcome-creature welcome-octopus"><CreatureArt creature="octopus" /></div><div className="welcome-creature welcome-starfish"><CreatureArt creature="starfish" /></div></div><h1>Sudoku<br /><span>Marino</span></h1><p className="welcome-copy">Completa el océano con tus animales favoritos.</p><div className="level-actions" aria-label="Elige un nivel"><button type="button" className="primary-button" onClick={() => onStart('guided')}>{hasSaved ? 'Continuar' : 'Jugar'}</button><button type="button" className="secondary-button" onClick={() => onStart('discovery')}>Nivel 2 · Inténtalo tú</button></div></section></main>
 }
 
 function VictoryScreen({ soundEnabled, onSound, onReplay, onHome }: { soundEnabled: boolean; onSound: () => void; onReplay: () => void; onHome: () => void }) {
