@@ -32,4 +32,5 @@ function isPersistedGameV1(value: unknown): value is PersistedGameV1 {
     && ['welcome', 'guided', 'playing', 'completed'].includes(candidate.phase ?? '')
     && typeof candidate.guidedStepComplete === 'boolean'
     && typeof candidate.soundEnabled === 'boolean'
+    && (candidate.level === undefined || ['guided', 'discovery'].includes(candidate.level))
 }
