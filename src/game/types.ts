@@ -5,6 +5,7 @@ export type Cell = number
 export type Board = Array<CreatureId | null>
 
 export type GamePhase = 'welcome' | 'guided' | 'playing' | 'completed'
+export type GameLevel = 'guided' | 'discovery'
 
 export type Puzzle = {
   id: string
@@ -21,4 +22,5 @@ export type PersistedGameV1 = {
   phase: GamePhase
   guidedStepComplete: boolean
   soundEnabled: boolean
+  level?: GameLevel
 }
