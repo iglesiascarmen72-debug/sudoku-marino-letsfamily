@@ -16,7 +16,7 @@ describe('Sudoku Marino experience', () => {
 
     expect(screen.getByRole('grid', { name: /Tablero de sudoku/i })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/casilla que brilla/i)
-    expect(screen.getByRole('gridcell', { name: /Casilla 1 vacÃ­a/i })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('gridcell', { name: /Casilla 1 vacía/i })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('does not place a wrong creature and gives a gentle hint', () => {
@@ -25,7 +25,7 @@ describe('Sudoku Marino experience', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Elegir pulpo rosa' }))
 
     expect(screen.getByRole('status')).toHaveTextContent(/Casi/i)
-    expect(screen.getByRole('gridcell', { name: /Casilla 1 vacÃ­a/i })).toBeInTheDocument()
+    expect(screen.getByRole('gridcell', { name: /Casilla 1 vacía/i })).toBeInTheDocument()
   })
 
   it('accepts the guided answer and persists progress', () => {
