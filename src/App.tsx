@@ -40,7 +40,7 @@ function fromPersisted(saved: PersistedGameV1): GameState {
     hintCell: null,
     hintStage: 0,
     errorCell: null,
-    message: saved.phase === 'completed' ? 'Â¡Lo hiciste fantÃ¡stico!' : 'Elige una casilla brillante para empezar.',
+    message: saved.phase === 'completed' ? '¡Lo hiciste fantástico!' : 'Elige una casilla brillante para empezar.',
     soundEnabled: saved.soundEnabled,
     guidedStepComplete: saved.guidedStepComplete,
   }
@@ -56,7 +56,7 @@ function createNewGame(soundEnabled = true): GameState {
     hintCell: puzzle.guidedCell,
     hintStage: 1,
     errorCell: null,
-    message: 'Toca la casilla que brilla. DespuÃ©s, elige una criatura.',
+    message: 'Toca la casilla que brilla. Después, elige una criatura.',
     soundEnabled,
     guidedStepComplete: false,
   }
@@ -90,7 +90,7 @@ function App() {
     const next = state?.phase === 'guided' || state?.phase === 'playing' ? { ...state, soundEnabled: soundPreference } : createNewGame(soundPreference)
     setState(next)
     playTone('select')
-    speak(next.phase === 'guided' ? 'Toca la casilla que brilla. DespuÃ©s, elige una criatura.' : 'Â¡Continuamos!', next.soundEnabled)
+    speak(next.phase === 'guided' ? 'Toca la casilla que brilla. Después, elige una criatura.' : '¡Continuamos!', next.soundEnabled)
   }
 
   const goHome = () => setState(null)
@@ -122,15 +122,15 @@ function App() {
 
   const selectCreature = (creature: CreatureId) => {
     if (state.selectedCell === null) {
-      setState({ ...state, message: 'Primero toca una casilla vacÃ­a.' })
-      speak('Primero toca una casilla vacÃ­a', state.soundEnabled)
+      setState({ ...state, message: 'Primero toca una casilla vacía.' })
+      speak('Primero toca una casilla vacía', state.soundEnabled)
       return
     }
     const cell = state.selectedCell
     if (state.puzzle.solution[cell] !== creature) {
-      setState({ ...state, errorCell: cell, hintCell: cell, hintStage: 1, message: 'Casi. Mira quÃ© criaturas todavÃ­a pueden entrar aquÃ­.' })
+      setState({ ...state, errorCell: cell, hintCell: cell, hintStage: 1, message: 'Casi. Mira qué criaturas todavía pueden entrar aquí.' })
       playTone('gentle-error')
-      speak('Casi. Mira quÃ© criaturas todavÃ­a pueden entrar aquÃ­', state.soundEnabled)
+      speak('Casi. Mira qué criaturas todavía pueden entrar aquí', state.soundEnabled)
       return
     }
 
@@ -146,7 +146,7 @@ function App() {
       hintCell: null,
       hintStage: 0,
       errorCell: null,
-      message: complete ? 'Â¡Lo hiciste fantÃ¡stico!' : 'Â¡Muy bien! Busca la siguiente casilla.',
+      message: complete ? '¡Lo hiciste fantástico!' : '¡Muy bien! Busca la siguiente casilla.',
     }
     setState(next)
     playTone(complete ? 'success' : 'select')
@@ -157,7 +157,7 @@ function App() {
     const cell = state.hintCell ?? state.selectedCell ?? getBestHintCell(state.board)
     if (cell === null) return
     const stage = state.hintCell === cell && state.hintStage === 1 ? 2 : 1
-    const message = stage === 2 ? 'Mira la criatura que brilla. Esa puede entrar aquÃ­.' : 'Mira la fila, la columna y el bloque. Algunas criaturas ya estÃ¡n ahÃ­.'
+    const message = stage === 2 ? 'Mira la criatura que brilla. Esa puede entrar aquí.' : 'Mira la fila, la columna y el bloque. Algunas criaturas ya están ahí.'
     setState({ ...state, hintCell: cell, selectedCell: cell, hintStage: stage, errorCell: null, message })
     speak(message, state.soundEnabled)
   }
@@ -168,7 +168,7 @@ function App() {
     <main className="app-shell game-shell">
       <div className="game-surface">
         <Header soundEnabled={state.soundEnabled} onSound={() => setSound(!state.soundEnabled)} />
-        <div className="progress-row" aria-label="Progreso de la partida"><span className="progress-star is-on">âœ¦</span><span className="progress-star">âœ¦</span><span className="progress-star">âœ¦</span><span className="progress-star">âœ¦</span></div>
+        <div className="progress-row" aria-label="Progreso de la partida"><span className="progress-star is-on">✦</span><span className="progress-star">✦</span><span className="progress-star">✦</span><span className="progress-star">✦</span></div>
         <div className="game-layout">
           <section className="board-column" aria-label="Zona de juego">
             <div className="coach-bubble"><div className="coach-avatar"><CreatureArt creature="turtle" /></div><p role="status" aria-live="polite">{state.message}</p></div>
@@ -183,7 +183,7 @@ function App() {
               })}
             </div>
             <button type="button" className="hint-button" onClick={showHint}><HintIcon /> <span>Pista</span></button>
-            <p className="helper-copy">Toca una casilla vacÃ­a y despuÃ©s una criatura.</p>
+            <p className="helper-copy">Toca una casilla vacía y después una criatura.</p>
           </aside>
         </div>
       </div>
@@ -196,11 +196,11 @@ function Header({ soundEnabled, onSound }: { soundEnabled: boolean; onSound: () 
 }
 
 function WelcomeScreen({ hasSaved, soundEnabled, onStart, onSound }: { hasSaved: boolean; soundEnabled: boolean; onStart: () => void; onSound: (enabled: boolean) => void }) {
-  return <main className="app-shell welcome-shell"><section className="welcome-card"><Header soundEnabled={soundEnabled} onSound={() => onSound(!soundEnabled)} /><div className="welcome-art" aria-hidden="true"><div className="welcome-creature welcome-turtle"><CreatureArt creature="turtle" /></div><div className="welcome-creature welcome-fish"><CreatureArt creature="fish" /></div><div className="welcome-creature welcome-octopus"><CreatureArt creature="octopus" /></div><div className="welcome-creature welcome-starfish"><CreatureArt creature="starfish" /></div></div><h1>Sudoku<br /><span>Marino</span></h1><p className="welcome-copy">Completa el ocÃ©ano con tus criaturas favoritas.</p><button type="button" className="primary-button" onClick={onStart}>{hasSaved ? 'Continuar' : 'Jugar'}</button></section></main>
+  return <main className="app-shell welcome-shell"><section className="welcome-card"><Header soundEnabled={soundEnabled} onSound={() => onSound(!soundEnabled)} /><div className="welcome-art" aria-hidden="true"><div className="welcome-creature welcome-turtle"><CreatureArt creature="turtle" /></div><div className="welcome-creature welcome-fish"><CreatureArt creature="fish" /></div><div className="welcome-creature welcome-octopus"><CreatureArt creature="octopus" /></div><div className="welcome-creature welcome-starfish"><CreatureArt creature="starfish" /></div></div><h1>Sudoku<br /><span>Marino</span></h1><p className="welcome-copy">Completa el océano con tus criaturas favoritas.</p><button type="button" className="primary-button" onClick={onStart}>{hasSaved ? 'Continuar' : 'Jugar'}</button></section></main>
 }
 
 function VictoryScreen({ soundEnabled, onSound, onReplay, onHome }: { soundEnabled: boolean; onSound: () => void; onReplay: () => void; onHome: () => void }) {
-  return <main className="app-shell victory-shell"><section className="victory-card"><Header soundEnabled={soundEnabled} onSound={onSound} /><div className="victory-art"><CreatureArt creature="starfish" /></div><h1>Â¡Lo hiciste<br /><span>fantÃ¡stico!</span></h1><p className="celebration-copy">El ocÃ©ano estÃ¡ completo.</p><div className="victory-actions"><button type="button" className="primary-button" onClick={onReplay}>Jugar otra vez</button><button type="button" className="secondary-button" onClick={onHome}>Inicio</button></div></section></main>
+  return <main className="app-shell victory-shell"><section className="victory-card"><Header soundEnabled={soundEnabled} onSound={onSound} /><div className="victory-art"><CreatureArt creature="starfish" /></div><h1>¡Lo hiciste<br /><span>fantástico!</span></h1><p className="celebration-copy">El océano está completo.</p><div className="victory-actions"><button type="button" className="primary-button" onClick={onReplay}>Jugar otra vez</button><button type="button" className="secondary-button" onClick={onHome}>Inicio</button></div></section></main>
 }
 
 export default App
