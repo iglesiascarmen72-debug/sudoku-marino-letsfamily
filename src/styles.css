@@ -80,6 +80,8 @@ button:focus-visible { outline: 4px solid #ffd44e; outline-offset: 3px; }
 .primary-button { width: min(100%, 320px); color: var(--navy); background: var(--yellow); box-shadow: 0 6px 0 #e4a83d; }
 .secondary-button { width: min(100%, 320px); color: var(--navy); background: white; box-shadow: 0 5px 0 #acd0d5; }
 .primary-button:hover, .secondary-button:hover, .hint-button:hover { transform: translateY(-2px); }
+.level-actions { width: min(100%, 350px); display: grid; gap: .75rem; margin-top: .3rem; }
+.level-actions .secondary-button { font-size: 1.05rem; min-height: 52px; }
 
 .game-surface { padding: clamp(1rem, 3vw, 2.2rem); background: linear-gradient(180deg, rgba(192, 244, 250, .95), rgba(207, 247, 243, .93)); }
 .game-surface > .game-header { padding-bottom: 0.2rem; }
